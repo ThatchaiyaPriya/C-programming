@@ -1,0 +1,33 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    int n;
+    if (scanf("%d", &n) != 1) return 0;
+
+    long long current_petrol = 0;
+    long long total_petrol = 0;
+    int start_index = 0;
+
+    for (int i = 0; i < n; i++) {
+        long long petrol, distance;
+        if (scanf("%lld %lld", &petrol, &distance) != 2) break;
+
+        long long diff = petrol - distance;
+        current_petrol += diff;
+        total_petrol += diff;
+
+        if (current_petrol < 0) {
+            start_index = i + 1;
+            current_petrol = 0;
+        }
+    }
+
+    if (total_petrol >= 0) {
+        printf("%d\n", start_index);
+    } else {
+        printf("-1\n");
+    }
+
+    return 0;
+}
