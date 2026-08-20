@@ -1,0 +1,119 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Helper function to pre-generate the first q primes using plain integers
+void get_primes(int q, int* primes) {
+    int count = 0;
+    int num = 2;
+    while (count < q) {
+        int is_prime = 1; // 1 means true
+        for (int i = 2; i * i <= num; i++) {
+            if (num % i == 0) {
+                is_prime = 0; // 0 means false
+                break;
+            }
+        }
+        if (is_prime) {
+            primes[count++] = num;
+        }
+        num++;
+    }
+}
+
+/*
+ * Complete the 'waiter' function below.
+ *
+ * The function accepts following parameters:
+ *  1. int number_count: size of the plate array
+ *  2. int* number: the plate numbers array
+ *  3. int q: number of iterations
+ *  4. int* result_count: pointer to store the size of the returned array
+ */
+int* waiter(int number_count, int* number, int q, int* result_count) {
+    // Generate the required prime numbers
+    int* primes = (int*)malloc(q * sizeof(int));
+    get_primes(q, primes);
+
+    // Allocate memory for our final answers array
+    int* answers = (int*)malloc(number_count * sizeof(int));
+    int answers_idx = 0;
+
+    // Allocate dynamic arrays to simulate stacks matching maximum number of plates
+    int* current_A = (int*)malloc(number_count * sizeof(int));
+    int* next_A = (int*)malloc(number_count * sizeof(int));
+    int* B = (int*)malloc(number_count * sizeof(int));
+
+    // Populate initial stack A from the input number array
+    int current_A_top = -1;
+    for (int i = 0; i < number_count; i++) {
+        current_A[++current_A_top] = number[i];
+    }
+
+    // Process each prime iteration
+    for (int i = 0; i < q; i++) {
+        int current_prime = primes[i];
+        int next_A_top = -1;
+        int B_top = -1;
+
+        // Process all elements from the top of current stack A
+        while (current_A_top >= 0) {
+            int plate = current_A[current_A_top--];
+            if (plate % current_prime == 0) {
+                B[++B_top] = plate;
+            } else {
+                next_A[++next_A_top] = plate;
+            }
+        }
+
+        // Pop all elements from stack B (top to bottom) into the answers array
+        while (B_top >= 0) {
+            answers[answers_idx++] = B[B_top--];
+        }
+
+        // Swap next_A and current_A tracking pointers for the next loop run
+        int* temp = current_A;
+        current_A = next_A;
+        next_A = temp;
+        current_A_top = next_A_top;
+    }
+
+    // After all iterations are done, pop remaining elements in stack A into answers
+    while (current_A_top >= 0) {
+        answers[answers_idx++] = current_A[current_A_top--];
+    }
+
+    // Set the output element array count tracker for HackerRank wrapper
+    *result_count = number_count;
+
+    // Free temporary structural storage setups
+    free(primes);
+    free(current_A);
+    free(next_A);
+    free(B);
+
+    return answers;
+}
+
+int main() {
+    int n, q;
+    if (scanf("%d %d", &n, &q) != 2) return 0;
+
+    int* number = (int*)malloc(n * sizeof(int));
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &number[i]);
+    }
+
+    int result_count;
+    int* result = waiter(n, number, q, &result_count);
+
+    // Print values out to standard output
+    for (int i = 0; i < result_count; i++) {
+        printf("%d\n", result[i]);
+    }
+
+    // Final memory cleanup 
+    free(number);
+    free(result);
+
+    return 0;
+}  
