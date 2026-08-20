@@ -1,0 +1,35 @@
+#include <stdio.h>
+void inorder(struct TreeNode* root, struct TreeNode** prev, struct TreeNode** first, struct TreeNode** second) {
+    if (root == NULL) {
+        return;
+    }
+    
+    // 1. Visit left subtree
+    inorder(root->left, prev, first, second);
+    
+    // 2. Process current node: check for structural order violation (drop)
+    if (*prev != NULL && root->val < (*prev)->val) {
+        // If this is the first inversion we encounter
+        if (*first == NULL) {
+            *first = *prev; // The out-of-order larger element is the previous node
+        }
+        // Always update second to track the out-of-order smaller element
+        *second = root;        
+    }
+    // Update previous node pointer to track our history
+    *prev = root;
+    
+    // 3. Visit right subtree
+    inorder(root->right, prev, first, second);
+}
+void recoverTree(struct TreeNode* root) {
+    struct TreeNode* prev = NULL;
+    struct TreeNode* first = NULL;
+    struct TreeNode* second = NULL;
+    inorder(root, &prev, &first, &second);
+    if (first != NULL && second != NULL) {
+        int temp = first->val;
+        first->val = second->val;
+        second->val = temp;
+    }
+}
