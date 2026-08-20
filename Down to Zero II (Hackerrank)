@@ -1,0 +1,146 @@
+#include <assert.h>
+#include <ctype.h>
+#include <limits.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+char* readline();
+char* ltrim(char*);
+char* rtrim(char*);
+int parse_int(char*);
+
+#define MAX_N 1000000
+
+// Global array to store precomputed minimum moves
+int moves[MAX_N + 1];
+bool is_precomputed = false;
+
+// Precompute the minimum moves for all numbers up to 1,000,000
+void precompute() {
+    moves[0] = 0;
+    // 0 in the array denotes an uninitialized state for i > 0
+    for (int i = 1; i <= MAX_N; i++) {
+        moves[i] = 0;
+    }
+
+    for (int i = 1; i <= MAX_N; i++) {
+        // Option 1: Reduce by 1 from the previous number
+        if (moves[i] == 0 || moves[i] > moves[i - 1] + 1) {
+            moves[i] = moves[i - 1] + 1;
+        }
+
+        // Option 2: Push forward to multiples where 'i' is the max factor (i >= j)
+        for (int j = 2; j <= i && i * j <= MAX_N; j++) {
+            if (moves[i * j] == 0 || moves[i * j] > moves[i] + 1) {
+                moves[i * j] = moves[i] + 1;
+            }
+        }
+    }
+    is_precomputed = true;
+}
+
+
+int downToZero(int n) {
+    if (!is_precomputed) {
+        precompute();
+    }
+    return moves[n];
+}
+
+int main()
+{
+    FILE* fptr = fopen(getenv("OUTPUT_PATH"), "w");
+    if (!fptr) {
+        fptr = stdout;
+    }
+
+    int q = parse_int(ltrim(rtrim(readline())));
+
+    for (int q_itr = 0; q_itr < q; q_itr++) {
+        int n = parse_int(ltrim(rtrim(readline())));
+
+        int result = downToZero(n);
+
+        fprintf(fptr, "%d\n", result);
+    }
+
+    fclose(fptr);
+
+    return 0;
+}
+
+char* readline() {
+    size_t alloc_length = 1024;
+    size_t data_length = 0;
+    char* data = malloc(alloc_length);
+
+    while (true) {
+        char* cursor = data + data_length;
+        char* line = fgets(cursor, alloc_length - data_length, stdin);
+
+        if (!line) {
+            break;
+        }
+
+        data_length += strlen(cursor);
+        if (data_length < alloc_length - 1 || data[data_length - 1] == '\n') {
+            break;
+        }
+
+        alloc_length <<= 1;
+        data = realloc(data, alloc_length);
+        if (!data) {
+            return NULL;
+        }
+    }
+
+    if (data_length == 0) {
+        free(data);
+        return NULL;
+    }
+
+    if (data[data_length - 1] == '\n') {
+        data[data_length - 1] = '\0';
+    } else {
+        data = realloc(data, data_length + 1);
+        data[data_length] = '\0';
+    }
+
+    return data;
+}
+
+char* ltrim(char* str) {
+    if (!str || !*str) {
+        return str;
+    }
+    while (*str != '\0' && isspace(*str)) {
+        str++;
+    }
+    return str;
+}
+
+char* rtrim(char* str) {
+    if (!str || !*str) {
+        return str;
+    }
+    char* end = str + strlen(str) - 1;
+    while (end >= str && isspace(*end)) {
+        end--;
+    }
+    *(end + 1) = '\0';
+    return str;
+}
+
+int parse_int(char* str) {
+    char* endptr;
+    int value = strtol(str, &endptr, 10);
+    if (endptr == str || *endptr != '\0') {
+        exit(EXIT_FAILURE);
+    }
+    return value;
+}
