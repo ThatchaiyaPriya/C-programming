@@ -1,0 +1,207 @@
+#include <assert.h>
+#include <ctype.h>
+#include <limits.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+char* readline();
+char* ltrim(char*);
+char* rtrim(char*);
+char** split_string(char*);
+int parse_int(char*);
+
+// Queue element structure
+typedef struct {
+    int x;
+    int y;
+} Point;
+
+
+int minimumMoves(int grid_count, char** grid, int startX, int startY, int goalX, int goalY) {
+    if (startX == goalX && startY == goalY) return 0;
+
+    // Allocate 2D array to track minimum moves to reach each cell
+    int** moves = (int**)malloc(grid_count * sizeof(int*));
+    for (int i = 0; i < grid_count; i++) {
+        moves[i] = (int*)malloc(grid_count * sizeof(int));
+        for (int j = 0; j < grid_count; j++) {
+            moves[i][j] = INT_MAX;
+        }
+    }
+
+    // Allocate queue for BFS tracking
+    Point* queue = (Point*)malloc(grid_count * grid_count * sizeof(Point));
+    int head = 0, tail = 0;
+
+    // Initialize start position
+    moves[startX][startY] = 0;
+    queue[tail++] = (Point){startX, startY};
+
+    // Direction offsets: Up, Down, Left, Right
+    int dx[] = {-1, 1, 0, 0};
+    int dy[] = {0, 0, -1, 1};
+
+    while (head < tail) {
+        Point curr = queue[head++];
+        int current_move = moves[curr.x][curr.y];
+
+        // If goal is hit, return the optimal steps
+        if (curr.x == goalX && curr.y == goalY) {
+            int final_result = current_move;
+            
+            // Cleanup allocations before returning
+            for (int i = 0; i < grid_count; i++) free(moves[i]);
+            free(moves);
+            free(queue);
+            return final_result;
+        }
+
+        // Slide in all 4 directions
+        for (int d = 0; d < 4; d++) {
+            int nx = curr.x + dx[d];
+            int ny = curr.y + dy[d];
+
+            // Continue moving in the same direction until a obstacle or wall boundary is reached
+            while (nx >= 0 && nx < grid_count && ny >= 0 && ny < grid_count && grid[nx][ny] != 'X') {
+                if (moves[nx][ny] == INT_MAX) {
+                    moves[nx][ny] = current_move + 1;
+                    queue[tail++] = (Point){nx, ny};
+                }
+                nx += dx[d];
+                ny += dy[d];
+            }
+        }
+    }
+
+    // Fallback if unreachable
+    for (int i = 0; i < grid_count; i++) free(moves[i]);
+    free(moves);
+    free(queue);
+    return -1;
+}
+
+int main()
+{
+    FILE* fptr = fopen(getenv("OUTPUT_PATH"), "w");
+    if (!fptr) {
+        fptr = stdout;
+    }
+
+    int n = parse_int(ltrim(rtrim(readline())));
+
+    char** grid = malloc(n * sizeof(char*));
+
+    for (int i = 0; i < n; i++) {
+        char* grid_item = readline();
+        grid[i] = grid_item;
+    }
+
+    char** first_multiple_input = split_string(rtrim(readline()));
+
+    int startX = parse_int(*(first_multiple_input + 0));
+    int startY = parse_int(*(first_multiple_input + 1));
+    int goalX = parse_int(*(first_multiple_input + 2));
+    int goalY = parse_int(*(first_multiple_input + 3));
+
+    int result = minimumMoves(n, grid, startX, startY, goalX, goalY);
+
+    fprintf(fptr, "%d\n", result);
+    fclose(fptr);
+
+    free(grid);
+    free(first_multiple_input);
+
+    return 0;
+}
+
+char* readline() {
+    size_t alloc_length = 1024;
+    size_t data_length = 0;
+    char* data = malloc(alloc_length);
+
+    while (true) {
+        char* cursor = data + data_length;
+        char* line = fgets(cursor, alloc_length - data_length, stdin);
+
+        if (!line) {
+            break;
+        }
+
+        data_length += strlen(cursor);
+        if (data_length < alloc_length - 1 || data[data_length - 1] == '\n') {
+            break;
+        }
+
+        alloc_length <<= 1;
+        data = realloc(data, alloc_length);
+        if (!data) {
+            return NULL;
+        }
+    }
+
+    if (data_length == 0) {
+        free(data);
+        return NULL;
+    }
+
+    if (data[data_length - 1] == '\n') {
+        data[data_length - 1] = '\0';
+    } else {
+        data = realloc(data, data_length + 1);
+        data[data_length] = '\0';
+    }
+
+    return data;
+}
+
+char* ltrim(char* str) {
+    if (!str || !*str) {
+        return str;
+    }
+    while (*str != '\0' && isspace(*str)) {
+        str++;
+    }
+    return str;
+}
+
+char* rtrim(char* str) {
+    if (!str || !*str) {
+        return str;
+    }
+    char* end = str + strlen(str) - 1;
+    while (end >= str && isspace(*end)) {
+        end--;
+    }
+    *(end + 1) = '\0';
+    return str;
+}
+
+char** split_string(char* str) {
+    char** splits = NULL;
+    char* token = strtok(str, " ");
+    int spaces = 0;
+
+    while (token) {
+        splits = realloc(splits, sizeof(char*) * ++spaces);
+        if (!splits) {
+            return NULL;
+        }
+        splits[spaces - 1] = token;
+        token = strtok(NULL, " ");
+    }
+    return splits;
+}
+
+int parse_int(char* str) {
+    char* endptr;
+    int value = strtol(str, &endptr, 10);
+    if (endptr == str || *endptr != '\0') {
+        exit(EXIT_FAILURE);
+    }
+    return value;
+}
