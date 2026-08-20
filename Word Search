@@ -1,0 +1,57 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+bool backtrack(char** board, int m, int n, int r, int c, const char* word, int index) {
+    if (word[index] == '\0') {
+        return true;
+    }
+    if (r < 0 || r >= m || c < 0 || c >= n || board[r][c] != word[index]) {
+        return false;
+    }
+    char temp = board[r][c];
+    board[r][c] = '#';
+    bool found = backtrack(board, m, n, r + 1, c, word, index + 1) ||
+                 backtrack(board, m, n, r - 1, c, word, index + 1) ||
+                 backtrack(board, m, n, r, c + 1, word, index + 1) ||
+                 backtrack(board, m, n, r, c - 1, word, index + 1);
+    board[r][c] = temp;
+    return found;
+}
+bool exist(char** board, int boardSize, int* boardColSize, char* word) {
+    int m = boardSize;
+    int n = boardColSize[0];
+    int wordLen = strlen(word);
+    if (wordLen > m * n) return false;
+    int startCount = 0;
+    int endCount = 0;
+    char startChar = word[0];
+    char endChar = word[wordLen - 1];
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] == startChar) startCount++;
+            if (board[i][j] == endChar) endCount++;
+        }
+    }
+    char* targetWord = word;
+    if (startCount > endCount) {
+        targetWord = (char*)malloc((wordLen + 1) * sizeof(char));
+        for (int i = 0; i < wordLen; i++) {
+            targetWord[i] = word[wordLen - 1 - i];
+        }
+        targetWord[wordLen] = '\0';
+    }
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            if (board[i][j] == targetWord[0]) {
+                if (backtrack(board, m, n, i, j, targetWord, 0)) {
+                    if (targetWord != word) free(targetWord);
+                    return true;
+                }
+            }
+        }
+    }
+    
+    if (targetWord != word) free(targetWord);
+    return false;
+}
