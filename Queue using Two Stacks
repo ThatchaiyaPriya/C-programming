@@ -1,0 +1,76 @@
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>
+
+#define MAX_SIZE 100005
+
+// Structure representing the Queue using two stacks
+typedef struct {
+    int stack1[MAX_SIZE];
+    int stack2[MAX_SIZE];
+    int top1;
+    int top2;
+} QueueWithStacks;
+
+// Initialize the queue
+void initQueue(QueueWithStacks *q) {
+    q->top1 = -1;
+    q->top2 = -1;
+}
+
+// Push an element onto stack1
+void enqueue(QueueWithStacks *q, int x) {
+    q->stack1[++(q->top1)] = x;
+}
+
+// Helper function to shift elements from stack1 to stack2
+void shiftStacks(QueueWithStacks *q) {
+    if (q->top2 == -1) {
+        while (q->top1 != -1) {
+            q->stack2[++(q->top2)] = q->stack1[q->top1--];
+        }
+    }
+}
+
+// Remove the front element
+void dequeue(QueueWithStacks *q) {
+    shiftStacks(q);
+    if (q->top2 != -1) {
+        q->top2--;
+    }
+}
+
+// Return the front element
+int peek(QueueWithStacks *q) {
+    shiftStacks(q);
+    if (q->top2 != -1) {
+        return q->stack2[q->top2];
+    }
+    return -1; // Should not be reached based on constraints
+}
+
+int main() {
+    int queries;
+    if (scanf("%d", &queries) != 1) return 0;
+    
+    QueueWithStacks q;
+    initQueue(&q);
+    
+    for (int i = 0; i < queries; i++) {
+        int type;
+        scanf("%d", &type);
+        
+        if (type == 1) {
+            int x;
+            scanf("%d", &x);
+            enqueue(&q, x);
+        } else if (type == 2) {
+            dequeue(&q);
+        } else if (type == 3) {
+            printf("%d\n", peek(&q));
+        }
+    }
+    
+    return 0;
+}
