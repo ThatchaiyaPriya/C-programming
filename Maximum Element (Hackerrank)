@@ -1,0 +1,179 @@
+#include <assert.h>
+#include <ctype.h>
+#include <limits.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+char* readline();
+char* ltrim(char*);
+char* rtrim(char*);
+int parse_int(char*);
+
+
+int* getMax(int operations_count, char** operations, int* result_count) {
+    // Array to store the answers for type 3 queries
+    int* result = (int*)malloc(operations_count * sizeof(int));
+    int res_idx = 0;
+
+    // Allocate memory for the tracking stack
+    int* max_stack = (int*)malloc(operations_count * sizeof(int));
+    int top = -1;
+
+    for (int i = 0; i < operations_count; i++) {
+        char* op = operations[i];
+        
+        // Check query type
+        if (op[0] == '1') {
+            // Type 1: Parse the integer following the space
+            int x = atoi(op + 2);
+            
+            // If stack is empty, current element is the max.
+            // Otherwise, compare x with the current maximum on top of the stack.
+            if (top == -1) {
+                max_stack[++top] = x;
+            } else {
+                int current_max = max_stack[top];
+                max_stack[++top] = (x > current_max) ? x : current_max;
+            }
+        } 
+        else if (op[0] == '2') {
+            // Type 2: Pop the top element
+            if (top >= 0) {
+                top--;
+            }
+        } 
+        else if (op[0] == '3') {
+            // Type 3: Record the maximum element from the top of our tracking stack
+            if (top >= 0) {
+                result[res_idx++] = max_stack[top];
+            }
+        }
+    }
+
+    // Free temporary memory allocation
+    free(max_stack);
+
+    // Update the return count wrapper for HackerRank
+    *result_count = res_idx;
+    
+    // Shrink output result block to exact matching results size boundaries
+    result = (int*)realloc(result, res_idx * sizeof(int));
+    
+    return result;
+}
+
+int main()
+{
+    FILE* fptr = fopen(getenv("OUTPUT_PATH"), "w");
+    if (!fptr) {
+        fptr = stdout;
+    }
+
+    int n = parse_int(ltrim(rtrim(readline())));
+
+    char** ops = malloc(n * sizeof(char*));
+
+    for (int i = 0; i < n; i++) {
+        char* ops_item = readline();
+        *(ops + i) = ops_item;
+    }
+
+    int res_count;
+    int* res = getMax(n, ops, &res_count);
+
+    for (int i = 0; i < res_count; i++) {
+        fprintf(fptr, "%d", *(res + i));
+
+        if (i != res_count - 1) {
+            fprintf(fptr, "\n");
+        }
+    }
+
+    fprintf(fptr, "\n");
+    fclose(fptr);
+
+    // Free dynamically allocated elements
+    for (int i = 0; i < n; i++) {
+        free(ops[i]);
+    }
+    free(ops);
+    free(res);
+
+    return 0;
+}
+
+char* readline() {
+    size_t alloc_length = 1024;
+    size_t data_length = 0;
+    char* data = malloc(alloc_length);
+
+    while (true) {
+        char* cursor = data + data_length;
+        char* line = fgets(cursor, alloc_length - data_length, stdin);
+
+        if (!line) {
+            break;
+        }
+
+        data_length += strlen(cursor);
+        if (data_length < alloc_length - 1 || data[data_length - 1] == '\n') {
+            break;
+        }
+
+        alloc_length <<= 1;
+        data = realloc(data, alloc_length);
+        if (!data) {
+            return NULL;
+        }
+    }
+
+    if (data_length == 0) {
+        free(data);
+        return NULL;
+    }
+
+    if (data[data_length - 1] == '\n') {
+        data[data_length - 1] = '\0';
+    } else {
+        data = realloc(data, data_length + 1);
+        data[data_length] = '\0';
+    }
+
+    return data;
+}
+
+char* ltrim(char* str) {
+    if (!str || !*str) {
+        return str;
+    }
+    while (*str != '\0' && isspace(*str)) {
+        str++;
+    }
+    return str;
+}
+
+char* rtrim(char* str) {
+    if (!str || !*str) {
+        return str;
+    }
+    char* end = str + strlen(str) - 1;
+    while (end >= str && isspace(*end)) {
+        end--;
+    }
+    *(end + 1) = '\0';
+    return str;
+}
+
+int parse_int(char* str) {
+    char* endptr;
+    int value = strtol(str, &endptr, 10);
+    if (endptr == str || *endptr != '\0') {
+        exit(EXIT_FAILURE);
+    }
+    return value;
+}
