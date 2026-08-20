@@ -1,0 +1,36 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+typedef struct {
+    struct TreeNode** stack;
+    int top;
+} BSTIterator;
+void pushAllLeft(BSTIterator* obj, struct TreeNode* node) {
+    while (node != NULL) {
+        obj->stack[++(obj->top)] = node;
+        node = node->left;
+    }
+}
+BSTIterator* bSTIteratorCreate(struct TreeNode* root) {
+    BSTIterator* obj = (BSTIterator*)malloc(sizeof(BSTIterator));
+    obj->stack = (struct TreeNode**)malloc(100005 * sizeof(struct TreeNode*));
+    obj->top = -1; 
+    pushAllLeft(obj, root);
+    return obj;
+}
+int bSTIteratorNext(BSTIterator* obj) {
+    struct TreeNode* node = obj->stack[(obj->top)--];
+    if (node->right != NULL) {
+        pushAllLeft(obj, node->right);
+    }
+    
+    return node->val;
+}
+bool bSTIteratorHasNext(BSTIterator* obj) {
+    return obj->top >= 0;
+}
+void bSTIteratorFree(BSTIterator* obj) {
+    free(obj->stack);
+    free(obj);
+}
+
