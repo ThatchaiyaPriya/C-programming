@@ -1,0 +1,81 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+typedef struct TrieNode {
+    struct TrieNode* children[26];
+    char* word; 
+} TrieNode;
+TrieNode* createNode() {
+    TrieNode* node = (TrieNode*)malloc(sizeof(TrieNode));
+    node->word = NULL;
+    for (int i = 0; i < 26; i++) {
+        node->children[i] = NULL;
+    }
+    return node;
+}
+void insertWord(TrieNode* root, char* word) {
+    TrieNode* current = root;
+    for (int i = 0; word[i] != '\0'; i++) {
+        int index = word[i] - 'a';
+        if (current->children[index] == NULL) {
+            current->children[index] = createNode();
+        }
+        current = current->children[index];
+    }
+    current->word = word; 
+}
+void dfs(char** board, int m, int n, int r, int c, TrieNode* node, char** result, int* resultCount) {
+    if (r < 0 || r >= m || c < 0 || c >= n || board[r][c] == '#') {
+        return;
+    }
+
+    char ch = board[r][c];
+    int index = ch - 'a';
+    TrieNode* nextNode = node->children[index];
+
+    if (nextNode == NULL) {
+        return;
+    }
+
+    if (nextNode->word != NULL) {
+        result[(*resultCount)++] = nextNode->word;
+        nextNode->word = NULL; 
+    }
+    board[r][c] = '#'; 
+    dfs(board, m, n, r + 1, c, nextNode, result, resultCount);
+    dfs(board, m, n, r - 1, c, nextNode, result, resultCount);
+    dfs(board, m, n, r, c + 1, nextNode, result, resultCount);
+    dfs(board, m, n, r, c - 1, nextNode, result, resultCount);
+
+    board[r][c] = ch; 
+}
+void freeTrie(TrieNode* node) {
+    if (node == NULL) return;
+    for (int i = 0; i < 26; i++) {
+        freeTrie(node->children[i]);
+    }
+    free(node);
+}
+char** findWords(char** board, int boardSize, int* boardColSize, char** words, int wordsSize, int* returnSize) {
+    TrieNode* root = createNode();
+    for (int i = 0; i < wordsSize; i++) {
+        insertWord(root, words[i]);
+    }
+    int m = boardSize;
+    int n = boardColSize[0]; 
+    
+    char** result = (char**)malloc(wordsSize * sizeof(char*));
+    int resultCount = 0;
+
+    for (int r = 0; r < m; r++) {
+        for (int c = 0; c < n; c++) {
+            dfs(board, m, n, r, c, root, result, &resultCount);
+        }
+    }
+
+    freeTrie(root);
+
+    *returnSize = resultCount;
+    return result;
+}
