@@ -1,0 +1,33 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int compareStrings(const void* a, const void* b) {
+    return strcmp(*(const char**)a, *(const char**)b);
+}
+char*** suggestedProducts(char** products, int productsSize, char* searchWord, int* returnSize, int** returnColumnSizes) {
+    qsort(products, productsSize, sizeof(char*), compareStrings);
+    int wordLen = strlen(searchWord);
+    *returnSize = wordLen;
+    char*** result = (char***)malloc(wordLen * sizeof(char**));
+    *returnColumnSizes = (int*)malloc(wordLen * sizeof(int));
+    int left = 0;
+    int right = productsSize - 1;
+    for (int i = 0; i < wordLen; i++) {
+        char ch = searchWord[i];
+        while (left <= right && (strlen(products[left]) <= i || products[left][i] != ch)) {
+            left++;
+        }
+        while (left <= right && (strlen(products[right]) <= i || products[right][i] != ch)) {
+            right--;
+        }
+        int currentWindowSize = right - left + 1;
+        int suggestionsCount = (currentWindowSize > 3) ? 3 : (currentWindowSize < 0 ? 0 : currentWindowSize);
+        (*returnColumnSizes)[i] = suggestionsCount;
+        result[i] = (char**)malloc(suggestionsCount * sizeof(char*));
+        for (int j = 0; j < suggestionsCount; j++) {
+            result[i][j] = products[left + j];
+        }
+    }
+    
+    return result;
+}
