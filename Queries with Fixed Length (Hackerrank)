@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int* solve(int arr_count, int* arr, int queries_count, int* queries, int* result_count) {
+    *result_count = queries_count;
+    int* result = (int*)malloc(queries_count * sizeof(int));
+    if (!result) return NULL;
+
+    int* deque = (int*)malloc(arr_count * sizeof(int));
+    if (!deque) {
+        free(result);
+        return NULL;
+    }
+
+    for (int q = 0; q < queries_count; q++) {
+        int d = queries[q];
+        int head = 0;
+        int tail = 0;
+        int min_of_maxes = -1;
+
+        for (int i = 0; i < arr_count; i++) {
+            if (head < tail && deque[head] <= i - d) {
+                head++;
+            }
+
+            while (head < tail && arr[deque[tail - 1]] <= arr[i]) {
+                tail--;
+            }
+
+            deque[tail++] = i;
+
+            if (i >= d - 1) {
+                int current_max = arr[deque[head]];
+                if (min_of_maxes == -1 || current_max < min_of_maxes) {
+                    min_of_maxes = current_max;
+                }
+            }
+        }
+        result[q] = min_of_maxes;
+    }
+
+    free(deque);
+    return result;
+}
+
+int main() {
+    int n, q;
+    if (scanf("%d %d", &n, &q) != 2) return 0;
+
+    int* arr = (int*)malloc(n * sizeof(int));
+    for (int i = 0; i < n; i++) {
+        if (scanf("%d", &arr[i]) != 1) break;
+    }
+
+    int* queries = (int*)malloc(q * sizeof(int));
+    for (int i = 0; i < q; i++) {
+        if (scanf("%d", &queries[i]) != 1) break;
+    }
+
+    int result_count = 0;
+    int* result = solve(n, arr, q, queries, &result_count);
+
+    if (result) {
+        for (int i = 0; i < result_count; i++) {
+            printf("%d\n", result[i]);
+        }
+        free(result);
+    }
+
+    free(arr);
+    free(queries);
+    return 0;
+}
