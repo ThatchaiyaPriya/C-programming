@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <stdlib.h>
+typedef struct {
+    int val;
+    int idx;
+} Element;
+int compare(const void *a, const void *b) {
+    return (((Element*)a)->val > ((Element*)b)->val) - (((Element*)a)->val < ((Element*)b)->val);
+}
+void update(int* bit, int n, int idx, int val) {
+    for (; idx <= n; idx += idx & -idx) {
+        bit[idx] += val;
+    }
+}
+int query(int* bit, int idx) {
+    int sum = 0;
+    for (; idx > 0; idx -= idx & -idx) {
+        sum += bit[idx];
+    }
+    return sum;
+}
+int query_range(int* bit, int left, int right) {
+    if (left > right) return 0;
+    return query(bit, right) - query(bit, left - 1);
+}
+long long countOperationsToEmptyArray(int* nums, int numsSize) {
+    Element* arr = (Element*)malloc(numsSize * sizeof(Element));
+    for (int i = 0; i < numsSize; i++) {
+        arr[i].val = nums[i];
+        arr[i].idx = i + 1; 
+    }
+    qsort(arr, numsSize, sizeof(Element), compare);
+    int* bit = (int*)calloc(numsSize + 1, sizeof(int));
+    for (int i = 1; i <= numsSize; i++) {
+        update(bit, numsSize, i, 1);
+    }
+
+    long long total_ops = 0;
+    int curr_idx = 1; 
+    for (int i = 0; i < numsSize; i++) {
+        int target_idx = arr[i].idx;
+        if (curr_idx <= target_idx) {
+            total_ops += query_range(bit, curr_idx, target_idx);
+        } else {
+        total_ops += query_range(bit, curr_idx, numsSize) + query_range(bit, 1, target_idx);
+        }
+        update(bit, numsSize, target_idx, -1);
+        curr_idx = target_idx; 
+    }
+
+    free(arr);
+    free(bit);
+    return total_ops;
+}
