@@ -1,0 +1,50 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int compareStrings(const void *a, const void *b) {
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+void checkMagazine(int magazine_count, char** magazine, int note_count, char** note) {
+    qsort(magazine, magazine_count, sizeof(char*), compareStrings);
+    qsort(note, note_count, sizeof(char*), compareStrings);
+    int mag_ptr = 0;
+    int note_ptr = 0;
+    while (mag_ptr < magazine_count && note_ptr < note_count) {
+        int res = strcmp(magazine[mag_ptr], note[note_ptr]);
+        if (res == 0) {
+            mag_ptr++;
+            note_ptr++;
+        } else if (res < 0) {
+            mag_ptr++;
+        } else {
+            printf("No\n");
+            return;
+        }
+    }
+    if (note_ptr == note_count) {
+        printf("Yes\n");
+    } else {
+        printf("No\n");
+    }
+}
+int main() {
+    int m, n;
+    if (scanf("%d %d", &m, &n) != 2) return 0;
+    char** magazine = (char**)malloc(m * sizeof(char*));
+    char** note = (char**)malloc(n * sizeof(char*));
+    for (int i = 0; i < m; i++) {
+        magazine[i] = (char*)malloc(10 * sizeof(char));
+        if (scanf("%s", magazine[i]) != 1) return 0;
+    }
+    for (int i = 0; i < n; i++) {
+        note[i] = (char*)malloc(10 * sizeof(char));
+        if (scanf("%s", note[i]) != 1) return 0;
+    }
+    checkMagazine(m, magazine, n, note);
+    for (int i = 0; i < m; i++) free(magazine[i]);
+    for (int i = 0; i < n; i++) free(note[i]);
+    free(magazine);
+    free(note);
+    
+    return 0;
+}
