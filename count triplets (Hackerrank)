@@ -1,0 +1,242 @@
+#include <assert.h>
+#include <ctype.h>
+#include <limits.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+char* readline();
+char* ltrim(char*);
+char* rtrim(char*);
+char** split_string(char*);
+
+#define HASH_SIZE 200003
+
+// Simple Hash Map Node for open-addressing
+typedef struct {
+    long key;
+    long count;
+    bool occupied;
+} HashNode;
+
+// Hash function for long integers
+int get_hash(long key) {
+    unsigned long hash = (unsigned long)key;
+    hash = (hash ^ (hash >> 16)) * 0x45d9f3b;
+    hash = (hash ^ (hash >> 16)) * 0x45d9f3b;
+    hash = (hash ^ (hash >> 16));
+    return hash % HASH_SIZE;
+}
+
+// Find or insert key into the hash map
+HashNode* hash_get(HashNode* map, long key) {
+    int idx = get_hash(key);
+    while (map[idx].occupied) {
+        if (map[idx].key == key) {
+            return &map[idx];
+        }
+        idx = (idx + 1) % HASH_SIZE;
+    }
+    map[idx].key = key;
+    map[idx].count = 0;
+    map[idx].occupied = true;
+    return &map[idx];
+}
+
+// Check frequency without mutating map
+long hash_count(HashNode* map, long key) {
+    int idx = get_hash(key);
+    while (map[idx].occupied) {
+        if (map[idx].key == key) {
+            return map[idx].count;
+        }
+        idx = (idx + 1) % HASH_SIZE;
+    }
+    return 0;
+}
+
+// Complete the countTriplets function below.
+long countTriplets(int arr_count, long* arr, long r) {
+    HashNode* left_map = (HashNode*)calloc(HASH_SIZE, sizeof(HashNode));
+    HashNode* right_map = (HashNode*)calloc(HASH_SIZE, sizeof(HashNode));
+    
+    // Populate right map with frequencies
+    for (int i = 0; i < arr_count; i++) {
+        hash_get(right_map, arr[i])->count++;
+    }
+    
+    long total_triplets = 0;
+    
+    // Scan middle element candidates
+    for (int j = 0; j < arr_count; j++) {
+        long mid = arr[j];
+        
+        // Remove current middle candidate from right choices
+        HashNode* r_node = hash_get(right_map, mid);
+        if (r_node->count > 0) r_node->count--;
+        
+        // Condition check for G.P.
+        if (mid % r == 0) {
+            long prev = mid / r;
+            long next = mid * r;
+            
+            long left_count = hash_count(left_map, prev);
+            long right_count = hash_count(right_map, next);
+            
+            total_triplets += left_count * right_count;
+        }
+        
+        // Push processed middle into left choices
+        hash_get(left_map, mid)->count++;
+    }
+    
+    free(left_map);
+    free(right_map);
+    
+    return total_triplets;
+}
+
+int main()
+{
+    FILE* fptr = fopen(getenv("OUTPUT_PATH"), "w");
+
+    char** nr = split_string(rtrim(readline()));
+
+    char* n_endptr;
+    char* n_str = nr[0];
+    int n = strtol(n_str, &n_endptr, 10);
+
+    if (n_endptr == n_str || *n_endptr != '\0') { exit(EXIT_FAILURE); }
+
+    char* r_endptr;
+    char* r_str = nr[1];
+    long r = strtol(r_str, &r_endptr, 10);
+
+    if (r_endptr == r_str || *r_endptr != '\0') { exit(EXIT_FAILURE); }
+
+    char** arr_temp = split_string(rtrim(readline()));
+
+    long* arr = malloc(n * sizeof(long));
+
+    for (int i = 0; i < n; i++) {
+        char* arr_item_endptr;
+        char* arr_item_str = *(arr_temp + i);
+        long arr_item = strtol(arr_item_str, &arr_item_endptr, 10);
+
+        if (arr_item_endptr == arr_item_str || *arr_item_endptr != '\0') { exit(EXIT_FAILURE); }
+
+        *(arr + i) = arr_item;
+    }
+
+    int arr_count = n;
+
+    long ans = countTriplets(arr_count, arr, r);
+
+    fprintf(fptr, "%ld\n", ans);
+
+    fclose(fptr);
+    return 0;
+}
+
+char* readline() {
+    size_t alloc_length = 1024;
+    size_t data_length = 0;
+    char* data = malloc(alloc_length);
+
+    while (true) {
+        char* cursor = data + data_length;
+        char* line = fgets(cursor, alloc_length - data_length, stdin);
+
+        if (!line) {
+            break;
+        }
+
+        data_length += strlen(cursor);
+
+        if (data_length < alloc_length - 1 || data[data_length - 1] == '\n') {
+            break;
+        }
+
+        alloc_length <<= 1;
+        data = realloc(data, alloc_length);
+
+        if (!data) {
+            data = '\0';
+            break;
+        }
+    }
+
+    if (data[data_length - 1] == '\n') {
+        data[data_length - 1] = '\0';
+        data = realloc(data, data_length);
+        if (!data) {
+            data = '\0';
+        }
+    } else {
+        data = realloc(data, data_length + 1);
+        if (!data) {
+            data = '\0';
+        } else {
+            data[data_length] = '\0';
+        }
+    }
+
+    return data;
+}
+
+char* ltrim(char* str) {
+    if (!str) {
+        return '\0';
+    }
+
+    if (!*str) {
+        return str;
+    }
+
+    while (*str != '\0' && isspace(*str)) {
+        str++;
+    }
+
+    return str;
+}
+
+char* rtrim(char* str) {
+    if (!str) {
+        return '\0';
+    }
+
+    if (!*str) {
+        return str;
+    }
+
+    char* end = str + strlen(str) - 1;
+
+    while (end >= str && isspace(*end)) {
+        end--;
+    }
+
+    *(end + 1) = '\0';
+
+    return str;
+}
+
+char** split_string(char* str) {
+    char** splits = NULL;
+    char* token = strtok(str, " ");
+    int spaces = 0;
+
+    while (token) {
+        splits = realloc(splits, sizeof(char*) * ++spaces);
+        if (!splits) {
+            return splits;
+        }
+        splits[spaces - 1] = token;
+        token = strtok(NULL, " ");
+    }
+
+    return splits;
+}
