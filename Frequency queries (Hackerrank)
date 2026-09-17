@@ -1,0 +1,240 @@
+#include <assert.h>
+#include <ctype.h>
+#include <limits.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+char* readline();
+char* ltrim(char*);
+char* rtrim(char*);
+char** split_string(char*);
+#define HASH_SIZE 300007
+typedef struct {
+    int key;
+    int value;
+    bool occupied;
+} HashNode;
+int hash_func(int key) {
+    unsigned int x = (unsigned int)key;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = (x >> 16) ^ x;
+    return x % HASH_SIZE;
+}
+HashNode* get_node(HashNode* table, int key) {
+    int idx = hash_func(key);
+    while (table[idx].occupied) {
+        if (table[idx].key == key) {
+            return &table[idx];
+        }
+        idx = (idx + 1) % HASH_SIZE;
+    }
+    table[idx].key = key;
+    table[idx].value = 0;
+    table[idx].occupied = true;
+    return &table[idx];
+}
+int* freqQuery(int queries_rows, int queries_columns, int** queries, int* result_count) {
+    HashNode* value_counts = (HashNode*)calloc(HASH_SIZE, sizeof(HashNode));
+    int* freq_pool = (int*)calloc(queries_rows + 5, sizeof(int));
+    int* output = (int*)malloc(queries_rows * sizeof(int));
+    int out_idx = 0;
+    for (int i = 0; i < queries_rows; i++) {
+        int command = queries[i][0];
+        int val = queries[i][1];
+        if (command == 1) {
+            HashNode* node = get_node(value_counts, val);
+            int old_freq = node->value;
+            int new_freq = old_freq + 1;
+            node->value = new_freq;
+            if (old_freq > 0) {
+                freq_pool[old_freq]--;
+            }
+            if (new_freq <= queries_rows) {
+                freq_pool[new_freq]++;
+            }
+            
+        } else if (command == 2) {
+            HashNode* node = get_node(value_counts, val);
+            int old_freq = node->value;
+            
+            if (old_freq > 0) {
+                int new_freq = old_freq - 1;
+                node->value = new_freq;
+                
+                freq_pool[old_freq]--;
+                if (new_freq > 0) {
+                    freq_pool[new_freq]++;
+                }
+            }
+            
+        } else if (command == 3) {
+            if (val > queries_rows) {
+                output[out_idx++] = 0;
+            } else {
+                output[out_idx++] = (freq_pool[val] > 0) ? 1 : 0;
+            }
+        }
+    }
+   *result_count = out_idx;
+    free(value_counts);
+    free(freq_pool);
+    
+    return output;
+}
+
+int main()
+{
+    FILE* fptr = fopen(getenv("OUTPUT_PATH"), "w");
+
+    char* q_endptr;
+    char* q_str = ltrim(rtrim(readline()));
+    int q = strtol(q_str, &q_endptr, 10);
+
+    if (q_endptr == q_str || *q_endptr != '\0') { exit(EXIT_FAILURE); }
+
+    int** queries = malloc(q * sizeof(int*));
+
+    for (int i = 0; i < q; i++) {
+        *(queries + i) = malloc(2 * (sizeof(int)));
+
+        char** queries_item_temp = split_string(rtrim(readline()));
+
+        for (int j = 0; j < 2; j++) {
+            char* queries_item_endptr;
+            char* queries_item_str = *(queries_item_temp + j);
+            int queries_item = strtol(queries_item_str, &queries_item_endptr, 10);
+
+            if (queries_item_endptr == queries_item_str || *queries_item_endptr != '\0') { exit(EXIT_FAILURE); }
+
+            *(*(queries + i) + j) = queries_item;
+        }
+        free(queries_item_temp);
+    }
+
+    int queries_rows = q;
+    int queries_columns = 2;
+
+    int ans_count;
+    int* ans = freqQuery(queries_rows, queries_columns, queries, &ans_count);
+
+    for (int i = 0; i < ans_count; i++) {
+        fprintf(fptr, "%d", *(ans + i));
+
+        if (i != ans_count - 1) {
+            fprintf(fptr, "\n");
+        }
+    }
+
+    fprintf(fptr, "\n");
+
+    fclose(fptr);
+    free(ans);
+    for (int i = 0; i < q; i++) free(queries[i]);
+    free(queries);
+
+    return 0;
+}
+
+char* readline() {
+    size_t alloc_length = 1024;
+    size_t data_length = 0;
+    char* data = malloc(alloc_length);
+
+    while (true) {
+        char* cursor = data + data_length;
+        char* line = fgets(cursor, alloc_length - data_length, stdin);
+
+        if (!line) {
+            break;
+        }
+
+        data_length += strlen(cursor);
+
+        if (data_length < alloc_length - 1 || data[data_length - 1] == '\n') {
+            break;
+        }
+
+        alloc_length <<= 1;
+        data = realloc(data, alloc_length);
+
+        if (!data) {
+            data = '\0';
+            break;
+        }
+    }
+
+    if (data[data_length - 1] == '\n') {
+        data[data_length - 1] = '\0';
+        data = realloc(data, data_length);
+        if (!data) {
+            data = '\0';
+        }
+    } else {
+        data = realloc(data, data_length + 1);
+        if (!data) {
+            data = '\0';
+        } else {
+            data[data_length] = '\0';
+        }
+    }
+
+    return data;
+}
+
+char* ltrim(char* str) {
+    if (!str) {
+        return '\0';
+    }
+
+    if (!*str) {
+        return str;
+    }
+
+    while (*str != '\0' && isspace(*str)) {
+        str++;
+    }
+
+    return str;
+}
+
+char* rtrim(char* str) {
+    if (!str) {
+        return '\0';
+    }
+
+    if (!*str) {
+        return str;
+    }
+
+    char* end = str + strlen(str) - 1;
+
+    while (end >= str && isspace(*end)) {
+        end--;
+    }
+
+    *(end + 1) = '\0';
+
+    return str;
+}
+
+char** split_string(char* str) {
+    char** splits = NULL;
+    char* token = strtok(str, " ");
+    int spaces = 0;
+
+    while (token) {
+        splits = realloc(splits, sizeof(char*) * ++spaces);
+        if (!splits) {
+            return splits;
+        }
+        splits[spaces - 1] = token;
+        token = strtok(NULL, " ");
+    }
+
+    return splits;
+}
